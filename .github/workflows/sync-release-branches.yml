@@ -1,0 +1,54 @@
+name: sync-branches
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  get-branches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: git fetch
+        run: |
+          git fetch --prune
+          git fetch --all
+      - id: set-matrix
+        # Gets a list of release-* branches, converts the output to
+        # a JSON object, and sets the matrix build for all branches
+        run: |
+          sleep 5
+          branches=$(git for-each-ref --format="%(refname:lstrip=3)" | grep "release-*" | jq -R . | jq -cs ['.[] | {branch: .}'])
+          echo "::set-output name=matrix::{\"include\":${branches}}"
+
+  sync-branches:
+    needs: get-branches
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{fromJSON(needs.get-branches.outputs.matrix)}}
+    steps:
+      - name: Opening pull request
+        id: pull
+        continue-on-error: true
+        uses: tretuna/sync-branches@1.4.0
+        with:
+          CONTENT_COMPARISON: true
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          FROM_BRANCH: "main"
+          TO_BRANCH: "${{ matrix.branch }}"
+          
+#  mattermost:
+#    needs: sync-branches
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix: ${{fromJSON(needs.get-branches.outputs.matrix)}}
+#    steps:        
+#    - name: Create the Mattermost Message
+#      run: |
+#        echo "{\"text\":\"merge from master to ${{ matrix.branch }} :tada:\"}" > mattermost.json
+#    - uses: mattermost/action-mattermost-notify@master
+#      env:
+#        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}

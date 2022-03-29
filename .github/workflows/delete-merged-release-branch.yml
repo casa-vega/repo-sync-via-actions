@@ -1,0 +1,19 @@
+name: delete merged release branch
+
+on: 
+  pull_request:
+    branches: 
+      - main
+    types:
+      - closed
+    
+jobs:
+  delete-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: delete release branch on merge
+        run: |
+          git fetch --all
+          git push origin --delete ${{ github.head_ref }}
+          git fetch --prune

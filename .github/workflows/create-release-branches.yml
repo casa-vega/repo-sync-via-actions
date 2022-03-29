@@ -1,0 +1,35 @@
+name: create-branches
+
+on:
+  schedule:
+    # Midnight on Thursday
+    - cron: '0 0 * * Thu'
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: main
+      - name: create release branches
+        run: |
+          # clean up branches 
+          git fetch --prune
+          
+          # current and distant branches can be set apart accordingly
+          current="release-$(date +%m-%d-%Y -d '+7 days')" #
+          distant="release-$(date +%m-%d-%Y -d '+14 days')"
+          releases=("$current" "$distant")
+          
+          # create branch if not already created
+          for release in "${releases[@]}"; do
+              if git show-ref "$release"; then
+                  echo "branch exists: $release"
+              else
+                  git checkout -b "$release"
+                  git push origin "$release"
+              fi 
+          done
