@@ -9,3 +9,8 @@ These actions perform several tasks
 - Delete release branches pushed to default branch
 - Create release branches if they don't exist
   - Thursdays
+
+
+## Requirements:
+- jq command
+- https://github.com/marketplace/actions/sync-branches
